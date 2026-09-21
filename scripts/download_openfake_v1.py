@@ -1,4 +1,6 @@
 import argparse
+import os
+import sys
 import csv
 from collections import Counter
 from io import BytesIO
@@ -160,3 +162,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(0)

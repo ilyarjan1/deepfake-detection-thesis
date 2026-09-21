@@ -1,0 +1,38 @@
+diff --git a/engine_finetune.py b/engine_finetune.py
+index e356fc9..c19e558 100644
+--- a/engine_finetune.py
++++ b/engine_finetune.py
+@@ -173,15 +173,24 @@ def evaluate(data_loader, model, device, use_amp=False):
+     metric_logger.synchronize_between_processes()
+     print('* Acc@1 {top1.global_avg:.3f} Acc@5 {top5.global_avg:.3f} loss {losses.global_avg:.3f}'
+           .format(top1=metric_logger.acc1, top5=metric_logger.acc5, losses=metric_logger.loss))
+-
+-
+-    output_ddp = [torch.zeros_like(predictions) for _ in range(utils.get_world_size())]
+-    dist.all_gather(output_ddp, predictions)
+-    labels_ddp = [torch.zeros_like(labels) for _ in range(utils.get_world_size())]
+-    dist.all_gather(labels_ddp, labels)
+-
+-    output_all = torch.concat(output_ddp, dim=0)
+-    labels_all = torch.concat(labels_ddp, dim=0)
++    if dist.is_available() and dist.is_initialized():
++        output_ddp = [
++            torch.zeros_like(predictions)
++            for _ in range(utils.get_world_size())
++        ]
++        dist.all_gather(output_ddp, predictions)
++
++        labels_ddp = [
++            torch.zeros_like(labels)
++            for _ in range(utils.get_world_size())
++        ]
++        dist.all_gather(labels_ddp, labels)
++
++        output_all = torch.concat(output_ddp, dim=0)
++        labels_all = torch.concat(labels_ddp, dim=0)
++    else:
++        output_all = predictions
++        labels_all = labels
+ 
+ 
+     y_pred = softmax(output_all.detach().cpu().numpy(), axis=1)[:, 1]

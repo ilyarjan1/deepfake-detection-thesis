@@ -1,0 +1,42 @@
+# Datasets and caches
+data/
+dataset/
+datasets/
+downloads/
+cache/
+.cache/
+huggingface-cache/
+
+# Model weights
+pretrained_ckpts/
+model_weights/
+checkpoints/
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+
+# Large archives and dataset containers
+*.zip
+*.z[0-9][0-9]
+*.tar
+*.tar.gz
+*.parquet
+*.arrow
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# IDE and operating system
+.vscode/
+.idea/
+.DS_Store
+
+# Generated temporary output
+tmp/
+runs/
+wandb/

@@ -1,0 +1,3 @@
+pretrained_ckpts/GenImage_train.pth model testing on...
+testset,accuracy,avg precision
+StableDiffusionV14,0.99825,0.999984342917076

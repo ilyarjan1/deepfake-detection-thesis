@@ -1,0 +1,6 @@
+name: aide
+channels:
+  - defaults
+dependencies:
+  - python=3.10
+prefix: /home/pw06rnvw/miniconda3/envs/aide

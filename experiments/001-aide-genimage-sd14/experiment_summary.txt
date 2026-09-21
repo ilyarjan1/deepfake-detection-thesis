@@ -1,0 +1,13 @@
+Experiment: AIDE on GenImage Stable Diffusion v1.4
+Date: 2026-09-21T18:21:04-04:00
+AIDE commit: 6725b710d5c437ab2f59792908ce0377dfc907de
+Checkpoint: pretrained_ckpts/GenImage_train.pth
+Images: 12000
+Real images: 6000
+Fake images: 6000
+Accuracy: 0.99825
+Average precision: 0.999984342917076
+Errors: 21
+PyTorch: 2.0.1+cu118
+CUDA runtime: 11.8
+GPU: NVIDIA GeForce RTX 3070 Ti Laptop GPU

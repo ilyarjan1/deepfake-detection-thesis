@@ -116,6 +116,42 @@ yet establish that a particular fusion method will improve performance.
 
 Paper: [OpenFake, arXiv:2509.09495](https://arxiv.org/abs/2509.09495)
 
+## Preliminary visual failure inspection
+
+Contact sheets compared the 12 most confidently missed fakes with the 12 most
+confidently detected fakes for Recraft v3, Imagen 4, Grok 2, Flux 1.1 Pro,
+Midjourney 6, and DALL-E 3.
+
+Visible patterns in this small, deliberately extreme sample:
+
+- Confident detections frequently have a familiar synthetic aesthetic: centered
+  subjects, shallow depth of field, cinematic lighting, high saturation, smooth
+  portraits, or concept-art styling.
+- Confident misses more often resemble ordinary web imagery: editorial or event
+  photographs, sports and political imagery, archival scans, posters, product
+  pages, documents, screenshots, and images with borders or large white areas.
+- Flux 1.1 Pro misses are especially concentrated in graphic-design, product,
+  poster, archival, and text-bearing layouts.
+- Imagen 4 and Grok 2 misses often imitate news, celebrity, sports, political,
+  or documentary photography.
+- Midjourney 6 misses include minimalist scenes, interiors, isolated objects,
+  black-and-white imagery, and flatter compositions.
+- Recraft v3 misses span natural-looking animals, food, landscapes, macro
+  photography, and ordinary commercial imagery, while strong detections often
+  contain conspicuous stylization or unusual object concepts.
+- DALL-E 3 is less cleanly separated, but many confident misses have vintage,
+  editorial, illustrative, fashion, cosplay, or complex multi-person content.
+
+These observations suggest that AIDE may rely partly on generator-era visual
+and frequency cues associated with polished synthetic imagery. It appears less
+reliable when modern generators imitate heterogeneous web, editorial, archival,
+or commercial-image distributions.
+
+This inspection is exploratory. The galleries intentionally select probability
+extremes and contain only 24 examples per generator, so they cannot establish
+causality or population-level category effects. A larger, annotated sample and
+controlled perturbation tests are needed.
+
 ## Interpretation and limitations
 
 This is an out-of-distribution evaluation of one published checkpoint. It does

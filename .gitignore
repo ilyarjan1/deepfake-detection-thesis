@@ -48,3 +48,6 @@ experiments/002-aide-openfake/analysis/false_positives.csv
 
 # Local generated logs and temporary results
 /results/
+
+# Locally generated visual failure galleries
+experiments/002-aide-openfake/analysis/failure_galleries/

@@ -1,0 +1,115 @@
+diff --git a/engine_finetune.py b/engine_finetune.py
+index e356fc9..c9b46e9 100644
+--- a/engine_finetune.py
++++ b/engine_finetune.py
+@@ -173,15 +173,24 @@ def evaluate(data_loader, model, device, use_amp=False):
+     metric_logger.synchronize_between_processes()
+     print('* Acc@1 {top1.global_avg:.3f} Acc@5 {top5.global_avg:.3f} loss {losses.global_avg:.3f}'
+           .format(top1=metric_logger.acc1, top5=metric_logger.acc5, losses=metric_logger.loss))
+-
+-
+-    output_ddp = [torch.zeros_like(predictions) for _ in range(utils.get_world_size())]
+-    dist.all_gather(output_ddp, predictions)
+-    labels_ddp = [torch.zeros_like(labels) for _ in range(utils.get_world_size())]
+-    dist.all_gather(labels_ddp, labels)
+-
+-    output_all = torch.concat(output_ddp, dim=0)
+-    labels_all = torch.concat(labels_ddp, dim=0)
++    if dist.is_available() and dist.is_initialized():
++        output_ddp = [
++            torch.zeros_like(predictions)
++            for _ in range(utils.get_world_size())
++        ]
++        dist.all_gather(output_ddp, predictions)
++
++        labels_ddp = [
++            torch.zeros_like(labels)
++            for _ in range(utils.get_world_size())
++        ]
++        dist.all_gather(labels_ddp, labels)
++
++        output_all = torch.concat(output_ddp, dim=0)
++        labels_all = torch.concat(labels_ddp, dim=0)
++    else:
++        output_all = predictions
++        labels_all = labels
+ 
+ 
+     y_pred = softmax(output_all.detach().cpu().numpy(), axis=1)[:, 1]
+@@ -194,4 +203,10 @@ def evaluate(data_loader, model, device, use_amp=False):
+     
+    
+ 
+-    return {k: meter.global_avg for k, meter in metric_logger.meters.items()}, acc, ap
+\ No newline at end of file
++    return (
++        {k: meter.global_avg for k, meter in metric_logger.meters.items()},
++        acc,
++        ap,
++        y_true,
++        y_pred,
++    )
+\ No newline at end of file
+diff --git a/main_finetune.py b/main_finetune.py
+index e5e5b47..ec7719b 100644
+--- a/main_finetune.py
++++ b/main_finetune.py
+@@ -351,12 +351,56 @@ def main(args):
+             )
+ 
+ 
+-            test_stats, acc, ap = evaluate(data_loader_val, model, device)
++            test_stats, acc, ap, y_true, y_pred = evaluate(
++                data_loader_val, model, device
++            )
+             print(f"Accuracy of the network on {len(dataset_val)} test images: {test_stats['acc1']:.5f}%")
+-        
++
+             print(f"test dataset is {val} acc: {acc}, ap: {ap}")
+             print("***********************************")
+ 
++            if len(dataset_val.data_list) != len(y_pred):
++                raise RuntimeError(
++                    "Prediction count does not match dataset path count: "
++                    f"{len(y_pred)} predictions versus "
++                    f"{len(dataset_val.data_list)} paths"
++                )
++
++            os.makedirs(args.output_dir, exist_ok=True)
++            safe_val = str(val).replace(os.sep, "_").replace(" ", "_")
++            prediction_csv = os.path.join(
++                args.output_dir,
++                f"{os.path.basename(args.resume)}_{safe_val}_predictions.csv",
++            )
++
++            with open(prediction_csv, "w", newline="") as prediction_file:
++                prediction_writer = csv.writer(prediction_file)
++                prediction_writer.writerow([
++                    "dataset_position",
++                    "image_path",
++                    "true_label",
++                    "fake_probability",
++                    "predicted_label",
++                    "correct",
++                ])
++
++                for dataset_position, (sample, true_label, fake_probability) in enumerate(
++                    zip(dataset_val.data_list, y_true, y_pred)
++                ):
++                    true_label = int(true_label)
++                    fake_probability = float(fake_probability)
++                    predicted_label = int(fake_probability > 0.5)
++
++                    prediction_writer.writerow([
++                        dataset_position,
++                        sample["image_path"],
++                        true_label,
++                        fake_probability,
++                        predicted_label,
++                        int(predicted_label == true_label),
++                    ])
++
++            print(f"Per-image predictions saved to: {prediction_csv}")
+             rows.append([val, acc, ap])
+ 
+ 

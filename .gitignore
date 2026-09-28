@@ -40,3 +40,8 @@ venv/
 tmp/
 runs/
 wandb/
+
+# Large derived OpenFake tables reproducible from predictions and metadata
+experiments/002-aide-openfake/analysis/joined_predictions.csv
+experiments/002-aide-openfake/analysis/false_negatives.csv
+experiments/002-aide-openfake/analysis/false_positives.csv

@@ -32,6 +32,22 @@ def save_metric_table(metrics, path):
     ).to_csv(path, index=False)
 
 
+def markdown_table(frame):
+    display = frame.copy()
+    for column in display.select_dtypes(include=[np.number]).columns:
+        if not pd.api.types.is_integer_dtype(display[column]):
+            display[column] = display[column].map(lambda value: f"{value:.4f}")
+
+    headers = [str(column) for column in display.columns]
+    lines = [
+        "| " + " | ".join(headers) + " |",
+        "| " + " | ".join(["---"] * len(headers)) + " |",
+    ]
+    for row in display.itertuples(index=False, name=None):
+        lines.append("| " + " | ".join(map(str, row)) + " |")
+    return "\n".join(lines)
+
+
 def grouped_fake_metrics(frame, column):
     rows = []
     fake = frame.loc[frame["true_label"] == 1].copy()
@@ -245,11 +261,11 @@ def main():
         "",
         "## Lowest fake recall by generator",
         "",
-        worst.to_markdown(index=False, floatfmt=".4f"),
+        markdown_table(worst),
         "",
         "## Highest fake recall by generator",
         "",
-        best.to_markdown(index=False, floatfmt=".4f"),
+        markdown_table(best),
         "",
     ]
 

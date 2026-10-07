@@ -1,0 +1,31 @@
+{
+  "protocol": "recraft_v3_single_source_adaptation_v1",
+  "seed": 42,
+  "source_generator": "recraft-v3",
+  "metadata": "/home/pw06rnvw/projects/AIDE/dataset/openfake_v1/metadata.csv",
+  "image_root": "/home/pw06rnvw/projects/AIDE/dataset/openfake_v1/OpenFake",
+  "output_root": "/home/pw06rnvw/projects/AIDE/dataset/adaptation/recraft_v3_seed42",
+  "uses_symbolic_links": true,
+  "splits": {
+    "train": {
+      "total": 1400,
+      "real": 700,
+      "fake": 700
+    },
+    "val": {
+      "total": 300,
+      "real": 150,
+      "fake": 150
+    },
+    "source_test": {
+      "total": 300,
+      "real": 150,
+      "fake": 150
+    },
+    "cross_generator_test": {
+      "total": 57655,
+      "real": 28826,
+      "fake": 28829
+    }
+  }
+}

@@ -1,0 +1,42 @@
+diff --git a/data/datasets.py b/data/datasets.py
+index 0c1807d..88bc389 100644
+--- a/data/datasets.py
++++ b/data/datasets.py
+@@ -13,6 +13,7 @@ from torch.utils.data import Dataset
+ from PIL import Image
+ import io
+ import torch
++import torch.nn.functional as F
+ from .dct import DCT_base_Rec_Module
+ import random
+ 
+@@ -31,9 +32,28 @@ Perturbations = K.container.ImageSequential(
+     K.RandomJPEG(jpeg_quality=(30, 100), p=0.1)
+ )
+ 
++def apply_perturbations_with_jpeg_padding(image):
++    """Pad for JPEG's 16-pixel blocks, then restore the original shape."""
++    height, width = image.shape[-2:]
++    pad_height = (-height) % 16
++    pad_width = (-width) % 16
++
++    if pad_height or pad_width:
++        image_padded = F.pad(
++            image,
++            (0, pad_width, 0, pad_height),
++            mode='reflect',
++        )
++    else:
++        image_padded = image
++
++    transformed = Perturbations(image_padded)[0]
++    return transformed[..., :height, :width]
++
++
+ transform_before = transforms.Compose([
+     transforms.ToTensor(),
+-    transforms.Lambda(lambda x: Perturbations(x)[0])
++    transforms.Lambda(apply_perturbations_with_jpeg_padding)
+     ]
+ )
+ transform_before_test = transforms.Compose([

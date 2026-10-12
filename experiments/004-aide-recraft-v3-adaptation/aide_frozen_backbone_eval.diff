@@ -1,0 +1,91 @@
+diff --git a/engine_finetune.py b/engine_finetune.py
+index e356fc9..c4453cd 100644
+--- a/engine_finetune.py
++++ b/engine_finetune.py
+@@ -30,6 +30,38 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
+                     model_ema: Optional[ModelEma] = None, mixup_fn: Optional[Mixup] = None, 
+                     log_writer=None, args=None):
+     model.train(True)
++
++    # During head-only adaptation, requires_grad=False prevents gradient
++    # updates but does not stop BatchNorm statistics, Dropout, or DropPath
++    # behavior from changing. Keep the complete frozen backbone in eval mode
++    # and explicitly return only the classifier head to training mode.
++    if args is not None and getattr(args, "trainable_modules", "all") == "fc":
++        model_for_mode = model.module if hasattr(model, "module") else model
++
++        for module_name, module in model_for_mode.named_modules():
++            is_classifier = (
++                module_name == "fc" or module_name.startswith("fc.")
++            )
++            if module_name and not is_classifier:
++                module.eval()
++
++        model_for_mode.fc.train(True)
++
++        unexpected_training_modules = [
++            module_name
++            for module_name, module in model_for_mode.named_modules()
++            if module_name
++            and not (module_name == "fc" or module_name.startswith("fc."))
++            and module.training
++        ]
++        if unexpected_training_modules:
++            raise RuntimeError(
++                "Frozen backbone modules remained in training mode: "
++                + ", ".join(unexpected_training_modules[:10])
++            )
++
++        print("Head-only mode: frozen backbone is in eval mode; fc is in train mode")
++
+     metric_logger = utils.MetricLogger(delimiter="  ")
+     metric_logger.add_meter('lr', utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
+     header = 'Epoch: [{}]'.format(epoch)
+@@ -173,15 +205,24 @@ def evaluate(data_loader, model, device, use_amp=False):
+     metric_logger.synchronize_between_processes()
+     print('* Acc@1 {top1.global_avg:.3f} Acc@5 {top5.global_avg:.3f} loss {losses.global_avg:.3f}'
+           .format(top1=metric_logger.acc1, top5=metric_logger.acc5, losses=metric_logger.loss))
+-
+-
+-    output_ddp = [torch.zeros_like(predictions) for _ in range(utils.get_world_size())]
+-    dist.all_gather(output_ddp, predictions)
+-    labels_ddp = [torch.zeros_like(labels) for _ in range(utils.get_world_size())]
+-    dist.all_gather(labels_ddp, labels)
+-
+-    output_all = torch.concat(output_ddp, dim=0)
+-    labels_all = torch.concat(labels_ddp, dim=0)
++    if dist.is_available() and dist.is_initialized():
++        output_ddp = [
++            torch.zeros_like(predictions)
++            for _ in range(utils.get_world_size())
++        ]
++        dist.all_gather(output_ddp, predictions)
++
++        labels_ddp = [
++            torch.zeros_like(labels)
++            for _ in range(utils.get_world_size())
++        ]
++        dist.all_gather(labels_ddp, labels)
++
++        output_all = torch.concat(output_ddp, dim=0)
++        labels_all = torch.concat(labels_ddp, dim=0)
++    else:
++        output_all = predictions
++        labels_all = labels
+ 
+ 
+     y_pred = softmax(output_all.detach().cpu().numpy(), axis=1)[:, 1]
+@@ -194,4 +235,10 @@ def evaluate(data_loader, model, device, use_amp=False):
+     
+    
+ 
+-    return {k: meter.global_avg for k, meter in metric_logger.meters.items()}, acc, ap
+\ No newline at end of file
++    return (
++        {k: meter.global_avg for k, meter in metric_logger.meters.items()},
++        acc,
++        ap,
++        y_true,
++        y_pred,
++    )
+\ No newline at end of file

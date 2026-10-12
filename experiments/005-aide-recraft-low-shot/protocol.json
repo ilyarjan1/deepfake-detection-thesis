@@ -1,0 +1,39 @@
+{
+  "name": "recraft_v3_low_shot_seed42",
+  "source_pool": "~/projects/AIDE/dataset/adaptation/recraft_v3_seed42/train",
+  "output_root": "~/projects/AIDE/dataset/adaptation/recraft_v3_seed42/low_shot",
+  "seed": 42,
+  "shots_per_class": [
+    5,
+    10,
+    25,
+    50,
+    100,
+    250,
+    500,
+    700
+  ],
+  "nested_subsets": true,
+  "real_images_per_setting": [
+    5,
+    10,
+    25,
+    50,
+    100,
+    250,
+    500,
+    700
+  ],
+  "fake_images_per_setting": [
+    5,
+    10,
+    25,
+    50,
+    100,
+    250,
+    500,
+    700
+  ],
+  "validation_split": "unchanged 150 real and 150 fake",
+  "source_test_split": "unchanged 150 real and 150 fake"
+}

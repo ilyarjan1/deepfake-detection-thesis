@@ -1,0 +1,29 @@
+--- data/datasets.py.before-class-order-fix	2026-10-11 23:04:58.242146265 -0400
++++ data/datasets.py	2026-10-11 23:04:58.244483729 -0400
+@@ -84,7 +84,7 @@
+             if '0_real' not in os.listdir(file_path):
+                 for folder_name in os.listdir(file_path):
+                 
+-                    assert os.listdir(os.path.join(file_path, folder_name)) == ['0_real', '1_fake']
++                    assert set(os.listdir(os.path.join(file_path, folder_name))) == {'0_real', '1_fake'}
+ 
+                     for image_path in os.listdir(os.path.join(file_path, folder_name, '0_real')):
+                         self.data_list.append({"image_path": os.path.join(file_path, folder_name, '0_real', image_path), "label" : 0})
+@@ -106,7 +106,7 @@
+                 if '0_real' not in os.listdir(file_path):
+                     for folder_name in os.listdir(file_path):
+                     
+-                        assert os.listdir(os.path.join(file_path, folder_name)) == ['0_real', '1_fake']
++                        assert set(os.listdir(os.path.join(file_path, folder_name))) == {'0_real', '1_fake'}
+ 
+                         for image_path in os.listdir(os.path.join(file_path, folder_name, '0_real')):
+                             self.data_list.append({"image_path": os.path.join(file_path, folder_name, '0_real', image_path), "label" : 0})
+@@ -172,7 +172,7 @@
+         if '0_real' not in os.listdir(file_path):
+             for folder_name in os.listdir(file_path):
+     
+-                assert os.listdir(os.path.join(file_path, folder_name)) == ['0_real', '1_fake']
++                assert set(os.listdir(os.path.join(file_path, folder_name))) == {'0_real', '1_fake'}
+                 
+                 for image_path in os.listdir(os.path.join(file_path, folder_name, '0_real')):
+                     self.data_list.append({"image_path": os.path.join(file_path, folder_name, '0_real', image_path), "label" : 0})

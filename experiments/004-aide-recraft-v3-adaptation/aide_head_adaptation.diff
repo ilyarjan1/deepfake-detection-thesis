@@ -1,0 +1,122 @@
+diff --git a/main_finetune.py b/main_finetune.py
+index e5e5b47..c843631 100644
+--- a/main_finetune.py
++++ b/main_finetune.py
+@@ -178,6 +178,12 @@ def get_args_parser():
+     parser.add_argument('--dist_url', default='env://',
+                         help='url used to set up distributed training')
+     
++    parser.add_argument(
++        '--init_checkpoint', default='', type=str,
++        help='Load model weights only and start a fresh optimizer at epoch 0')
++    parser.add_argument(
++        '--trainable_modules', default='all', choices=['all', 'fc'],
++        help='Choose all parameters or only the final AIDE classifier')
+     parser.add_argument('--use_amp', type=str2bool, default=False, 
+                         help="Use apex AMP (Automatic Mixed Precision) or not")
+     return parser
+@@ -256,7 +262,44 @@ def main(args):
+         resnet_path=args.resnet_path, 
+         convnext_path=args.convnext_path
+     )
+-        
++
++    if args.init_checkpoint:
++        checkpoint = torch.load(args.init_checkpoint, map_location='cpu')
++        checkpoint_model = checkpoint['model'] if 'model' in checkpoint else checkpoint
++        model.load_state_dict(checkpoint_model, strict=True)
++        print(f"Initialized model weights from: {args.init_checkpoint}")
++        print("Optimizer, scaler, and epoch state were not loaded")
++        del checkpoint_model
++        del checkpoint
++
++    if args.trainable_modules == 'fc':
++        for parameter in model.parameters():
++            parameter.requires_grad = False
++        for parameter in model.fc.parameters():
++            parameter.requires_grad = True
++
++    trainable_names = [
++        name for name, parameter in model.named_parameters()
++        if parameter.requires_grad
++    ]
++    trainable_count = sum(
++        parameter.numel() for parameter in model.parameters()
++        if parameter.requires_grad
++    )
++    total_count = sum(parameter.numel() for parameter in model.parameters())
++    if args.trainable_modules == 'fc':
++        if not trainable_names or any(
++            not name.startswith('fc.') for name in trainable_names
++        ):
++            raise RuntimeError(
++                f"Head-only freeze verification failed: {trainable_names}"
++            )
++    print(f"Trainable mode: {args.trainable_modules}")
++    print(f"Trainable parameters: {trainable_count:,} / {total_count:,}")
++    print("Trainable parameter names:")
++    for name in trainable_names:
++        print(f"  {name}")
++
+     model.to(device)
+ 
+     model_ema = None
+@@ -351,12 +394,56 @@ def main(args):
+             )
+ 
+ 
+-            test_stats, acc, ap = evaluate(data_loader_val, model, device)
++            test_stats, acc, ap, y_true, y_pred = evaluate(
++                data_loader_val, model, device
++            )
+             print(f"Accuracy of the network on {len(dataset_val)} test images: {test_stats['acc1']:.5f}%")
+-        
++
+             print(f"test dataset is {val} acc: {acc}, ap: {ap}")
+             print("***********************************")
+ 
++            if len(dataset_val.data_list) != len(y_pred):
++                raise RuntimeError(
++                    "Prediction count does not match dataset path count: "
++                    f"{len(y_pred)} predictions versus "
++                    f"{len(dataset_val.data_list)} paths"
++                )
++
++            os.makedirs(args.output_dir, exist_ok=True)
++            safe_val = str(val).replace(os.sep, "_").replace(" ", "_")
++            prediction_csv = os.path.join(
++                args.output_dir,
++                f"{os.path.basename(args.resume)}_{safe_val}_predictions.csv",
++            )
++
++            with open(prediction_csv, "w", newline="") as prediction_file:
++                prediction_writer = csv.writer(prediction_file)
++                prediction_writer.writerow([
++                    "dataset_position",
++                    "image_path",
++                    "true_label",
++                    "fake_probability",
++                    "predicted_label",
++                    "correct",
++                ])
++
++                for dataset_position, (sample, true_label, fake_probability) in enumerate(
++                    zip(dataset_val.data_list, y_true, y_pred)
++                ):
++                    true_label = int(true_label)
++                    fake_probability = float(fake_probability)
++                    predicted_label = int(fake_probability > 0.5)
++
++                    prediction_writer.writerow([
++                        dataset_position,
++                        sample["image_path"],
++                        true_label,
++                        fake_probability,
++                        predicted_label,
++                        int(predicted_label == true_label),
++                    ])
++
++            print(f"Per-image predictions saved to: {prediction_csv}")
+             rows.append([val, acc, ap])
+ 
+ 

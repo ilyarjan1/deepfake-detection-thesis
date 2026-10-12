@@ -1,0 +1,19 @@
+{
+  "name": "recraft_v3_equal_training_budget",
+  "shots_per_class": [
+    5,
+    10,
+    25,
+    50,
+    100,
+    250,
+    500,
+    700
+  ],
+  "expanded_samples_per_class": 700,
+  "total_samples_per_setting": 1400,
+  "batch_size": 2,
+  "epochs": 1,
+  "optimizer_steps_per_setting": 700,
+  "method": "Cycle selected images and apply AIDE random training augmentations"
+}

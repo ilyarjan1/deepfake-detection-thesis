@@ -1,0 +1,7 @@
+measurement,count
+both_detect_fake,21416
+adapted_only_detect_fake,2283
+original_only_detect_fake,594
+both_miss_fake,4536
+original_false_positives,596
+adapted_false_positives,2490
